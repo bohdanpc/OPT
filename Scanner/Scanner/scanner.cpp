@@ -14,6 +14,7 @@ typedef enum {
 	digit,
 	letter,
 	separator,
+	left_bracket,
 	invalid_char
 } ATTRIBUTE;
 
@@ -81,9 +82,11 @@ void fill_Attributes() {
 	for (int i = 33; i < 40; i++)
 		Attributes.insert(pair<char, uint>((char)i, invalid_char));
 
-	//insert separators '(',  ')'
-	for (int i = 40; i < 42; i++)
-		Attributes.insert(pair<char, uint>((char)i, separator));
+	//insert '('
+	Attributes.insert(pair<char, uint>((char)40, left_bracket));
+	
+	//insert separators ')'
+	Attributes.insert(pair<char, uint>((char)41, separator));
 
 	//insert invalid ascii characters
 	for (int i = 42; i < 44; i++)
@@ -235,6 +238,39 @@ void scanFile(ifstream &fin) {
 					add_to_idn_tab(tmp_token, lex_code);
 				}
 			add_new_token(lex_code, line_count, row_token_num);
+			break;
+
+		case left_bracket:
+			t_symbol l_bracket = curr_symbol;
+			get_next_symbol(fin, curr_symbol);
+			row_count++;
+
+			if (curr_symbol.value == '*') {
+				do {
+					//COM skipping state
+					do {
+						if (curr_symbol.value == '\n') {
+							line_count++;
+							row_count = 0;
+						}
+						row_count++;
+						get_next_symbol(fin, curr_symbol);
+					} while (curr_symbol.value != '*' && curr_symbol.value != EOF);
+
+					//ECOM state
+					while (curr_symbol.value == '*' && curr_symbol.value != EOF) {
+						row_count++;
+						get_next_symbol(fin, curr_symbol);
+					}
+
+				} while (curr_symbol.value != ')' && curr_symbol.value != EOF);
+				get_next_symbol(fin, curr_symbol);
+				row_count++;
+			} 
+			else {
+				lex_code = l_bracket.value;
+				add_new_token(lex_code, line_count, row_count);
+			}
 			break;
 
 		case separator:
