@@ -4,42 +4,13 @@
 #include <fstream>
 #include <iostream>
 #include <iomanip>
+#include "scanner.h"
 
 using namespace std;
-
-typedef unsigned int uint;
-
-typedef enum {
-	whitespace = 0,
-	digit,
-	letter,
-	separator,
-	left_bracket,
-	invalid_char
-} ATTRIBUTE;
-
-typedef struct {
-	char value;
-	uint attr;
-} t_symbol;
-
-typedef struct {
-	uint lex_code;
-	uint line_num;
-	uint row_num;
-}lex_string;
 
 static uint key_word_idx = 401;
 static uint constant_idx = 501;
 static uint identifier_idx = 1001;
-
-vector<lex_string> Tokens;
-map<char, uint> Attributes;
-
-map<string, uint> idn_tab;
-map<string, uint> key_tab;
-
-map<string, uint> const_tab;
 
 void idn_tab_init() {
 	idn_tab.insert(pair<string, uint>("SIGNAL", identifier_idx++));
@@ -55,10 +26,6 @@ void key_tab_init() {
 	key_tab.insert(pair<string, uint>("BEGIN", key_word_idx++));
 	key_tab.insert(pair<string, uint>("END", key_word_idx++));
 	key_tab.insert(pair<string, uint>("PROCEDURE", key_word_idx++));
-}
-
-void const_tab_init() {
-
 }
 
 
@@ -121,7 +88,7 @@ void fill_Attributes() {
 }
 
 //get next character from the file
-void get_next_symbol(ifstream &fin, t_symbol &res_symbol) {
+void get_next_symbol(istream &fin, t_symbol &res_symbol) {
 	res_symbol.value = fin.get();
 	try {
 		res_symbol.attr = Attributes.at(res_symbol.value);
@@ -135,20 +102,10 @@ void get_next_symbol(ifstream &fin, t_symbol &res_symbol) {
 
 void add_new_token(uint lex_code, uint line_count, uint row_token_num) {
 	lex_string tmp_lex_string;
-
 	tmp_lex_string.lex_code = lex_code;
 	tmp_lex_string.line_num = line_count;
 	tmp_lex_string.row_num = row_token_num;
 	Tokens.push_back(tmp_lex_string);
-}
-
-
-int search_const_tab(const string &tmp_token) {
-	auto it = const_tab.find(tmp_token);
-	if (it != const_tab.end())
-		return it->second;
-	else
-		return -1;
 }
 
 /**
@@ -179,7 +136,7 @@ void add_to_idn_tab(const string &idn, const uint code) {
 	idn_tab.insert(pair<string, uint>(idn, code));
 }
 
-void scanFile(ifstream &fin) {
+void scanFile(istream &fin, ostream &ferr) {
 	uint line_count = 1, row_count = 1, row_token_num = 1;
 	t_symbol curr_symbol;
 	string tmp_token;
@@ -208,20 +165,6 @@ void scanFile(ifstream &fin) {
 				get_next_symbol(fin, curr_symbol);
 			} while (curr_symbol.attr == whitespace && curr_symbol.value != EOF);
 			break;
-
-		case digit: {
-			row_token_num = row_count;
-			do {
-				row_count++;
-				tmp_token += curr_symbol.value;
-				get_next_symbol(fin, curr_symbol);
-			} while (curr_symbol.attr == digit && curr_symbol.value != EOF);
-
-			/*insert new token to 'Tokens vector' table*/
-			int lex_code = search_const_tab(tmp_token);
-			add_new_token(lex_code, line_count, row_token_num);
-			break;
-		}
 
 		case letter:
 			row_token_num = row_count;
@@ -282,7 +225,7 @@ void scanFile(ifstream &fin) {
 
 		case invalid_char:
 		default:
-			cerr << "Invalid char\n";
+			ferr << "Invalid char: line " << line_count << ", row: " << row_count << "\n";
 			get_next_symbol(fin, curr_symbol);
 			row_count++;
 		} //switch
@@ -291,7 +234,7 @@ void scanFile(ifstream &fin) {
 }
 
 
-void print_tokens_string(ofstream &out) {
+void print_tokens_string(ostream &out) {
 	if (!out)
 		throw exception("output stream for tokens_string is bad");
 	out << "---Tokens string---\n\n";
@@ -305,7 +248,7 @@ void print_tokens_string(ofstream &out) {
 }
 
 
-void print_key_tab(ofstream &out) {
+void print_key_tab(ostream &out) {
 	if (!out)
 		throw exception("output stream for key_tab is bad");
 	out << "---Key table---\n\n";
@@ -318,7 +261,7 @@ void print_key_tab(ofstream &out) {
 }
 
 
-void print_idn_tab(ofstream &out) {
+void print_idn_tab(ostream &out) {
 	if (!out)
 		throw exception("output stream for idn_Tab is bad");
 	out << "---Identifier table---\n\n";
@@ -331,9 +274,9 @@ void print_idn_tab(ofstream &out) {
 }
 
 
-void scanner(ifstream &fin) {
+void scanner(istream &fin, ostream &ferr) {
 	idn_tab_init();
 	key_tab_init();
 	fill_Attributes();
-	scanFile(fin);
+	scanFile(fin, ferr);
 }

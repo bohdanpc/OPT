@@ -1,0 +1,28 @@
+---Key table---
+
+Key word       Code           
+BEGIN          402            
+END            403            
+PROCEDURE      404            
+PROGRAM        401            
+---Identifier table---
+
+Identifier     Code           
+ARG1           1009           
+ARG2           1010           
+ARG3           1013           
+ARG4           1016           
+ARG5           1017           
+ARG6           1018           
+BLOCKFLOAT     1005           
+COMPLEX        1002           
+ERR            1014           
+EXT            1006           
+FLOAT          1004           
+INPUT1         1007           
+INTEGER        1003           
+SIGNAL         1001           
+TESTPROC2      1011           
+TESTPROC3      1012           
+TESTPROC4      1015           
+TESTPROCEDURE  1008           
