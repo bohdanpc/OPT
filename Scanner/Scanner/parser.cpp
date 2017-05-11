@@ -3,17 +3,17 @@
 
 static map<uint, string> NonTerminals;
 
-enum {
+enum nonterminalCode{
 	signal_program = 1,
 	program,
 	procedure_identifier,
 	//...etc
-} nonterminalCode;
+};
 
 #define LEN 50
 typedef struct tNode {
 	lex_string Token;
-	char nonTerminalName[LEN] = { 0 };
+	char nonTerminalCode;
 	vector<tNode*> children;
 }Node;
 
@@ -73,17 +73,21 @@ void nonterminal_BLOCK(Node *&Tree, lex_string &curr_token) {
 }
 
 void nonterminal_PROGRAM(Node *&Tree, lex_string &curr_token) {
+	Node *node_ntPROGRAM = new Node;
+	node_ntPROGRAM->nonTerminalCode = program;
+	Tree->children.push_back(node_ntPROGRAM);
+
 	if (curr_token.lex_code != search_key_tab("PROGRAM"))
 		cerr << "'PROGRAM' KEY_WORD expected...";
 	else {
 		curr_token = get_next_token();
-		nonterminal_PROC_IDN(Tree, curr_token);
+		nonterminal_PROC_IDN(node_ntPROGRAM, curr_token);
 
 		if (curr_token.lex_code != (uint)';')
 			cerr << "';' EXPECTED\n";
 		else {
 			curr_token = get_next_token();
-			nonterminal_BLOCK(Tree, curr_token);
+			nonterminal_BLOCK(node_ntPROGRAM, curr_token);
 		}
 
 		if (curr_token.lex_code != (uint)';')
@@ -91,6 +95,11 @@ void nonterminal_PROGRAM(Node *&Tree, lex_string &curr_token) {
 	}
 }
 
+void nonterminal_SIG_PROGRAM(Node *&Tree, lex_string &curr_token) {
+	Tree = new Node;
+	Tree->nonTerminalCode = signal_program;
+	nonterminal_PROGRAM(Tree, curr_token);
+}
 
 
 
