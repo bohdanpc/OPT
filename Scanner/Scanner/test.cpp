@@ -1,4 +1,4 @@
-#include "scanner.h"
+#include "parser.h"
 #include <fstream>
 #include <iostream>
 
@@ -22,6 +22,11 @@ int main() {
 		print_key_tab(out_tables);
 		print_idn_tab(out_tables);
 		cout << "Tables is written in \'" << tables_txt << "\'" << endl;
+		
+		Node *Tree = NULL;
+		lex_string curr_token;
+		nt_SIG_PROGRAM(Tree, curr_token);
+		print_Tree(Tree, cout);
 	}
 	catch (exception &excp) {
 		cerr << excp.what();

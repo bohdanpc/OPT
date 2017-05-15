@@ -8,9 +8,8 @@
 
 using namespace std;
 
-static uint key_word_idx = 401;
-static uint constant_idx = 501;
-static uint identifier_idx = 1001;
+static uint key_word_idx = KEYWORD_IDX_START;
+static uint identifier_idx = IDENTIFIER_IDX_START;
 
 void idn_tab_init() {
 	idn_tab.insert(pair<string, uint>("SIGNAL", identifier_idx++));
@@ -118,6 +117,22 @@ int search_key_tab(const string &tmp_token) {
 		return it->second;
 	else
 		return -1;
+}
+
+const string& search_tab(const map<string, uint> table, const uint lex_code) {
+	for (auto it = table.begin(); it != table.end(); it++)
+		if (it->second == lex_code)
+			return it->first;
+	throw exception("The string was not found in table");
+}
+
+const string& search_tabs(const uint lex_code) {
+	try {
+		return search_tab(idn_tab, lex_code);
+	}
+	catch (exception &) {
+		return search_tab(key_tab, lex_code);
+	}
 }
 
 /**

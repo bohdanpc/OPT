@@ -11,6 +11,8 @@ using namespace std;
 
 typedef unsigned int uint;
 
+#define IDENTIFIER_IDX_START 1001
+#define KEYWORD_IDX_START	 401
 typedef enum {
 	whitespace = 0,
 	digit,
@@ -44,3 +46,5 @@ void print_idn_tab(std::ostream &out);
 
 int search_key_tab(const string &tmp_token);
 int search_idn_tab(const string &tmp_token);
+
+const string& search_tabs(const uint lex_code);
