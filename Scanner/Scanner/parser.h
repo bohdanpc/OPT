@@ -11,3 +11,4 @@ struct Node {
 
 void nt_SIG_PROGRAM(Node *&Tree, lex_string &curr_token);
 void print_Tree(const Node *Tree, ostream &out, uint tab = 0);
+void parser();

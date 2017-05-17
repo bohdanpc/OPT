@@ -11,20 +11,27 @@ using namespace std;
 static uint key_word_idx = KEYWORD_IDX_START;
 static uint identifier_idx = IDENTIFIER_IDX_START;
 
+vector<lex_string> Tokens;
+map<char, uint> Attributes;
+
+map<string, uint> idn_tab;
+map<string, uint> key_tab;
+
 void idn_tab_init() {
-	idn_tab.insert(pair<string, uint>("SIGNAL", identifier_idx++));
-	idn_tab.insert(pair<string, uint>("COMPLEX", identifier_idx++));
-	idn_tab.insert(pair<string, uint>("INTEGER", identifier_idx++));
-	idn_tab.insert(pair<string, uint>("FLOAT", identifier_idx++));
-	idn_tab.insert(pair<string, uint>("BLOCKFLOAT", identifier_idx++));
-	idn_tab.insert(pair<string, uint>("EXT", identifier_idx++));
+	idn_tab.insert(pair<string, uint>("SIGNAL", idx_signal));
+	idn_tab.insert(pair<string, uint>("COMPLEX", idx_complex));
+	idn_tab.insert(pair<string, uint>("INTEGER", idx_integer));
+	idn_tab.insert(pair<string, uint>("FLOAT", idx_float));
+	idn_tab.insert(pair<string, uint>("BLOCKFLOAT", idx_blockfloat));
+	idn_tab.insert(pair<string, uint>("EXT", idx_ext));
 }
 
 void key_tab_init() {
-	key_tab.insert(pair<string, uint>("PROGRAM", key_word_idx++));
-	key_tab.insert(pair<string, uint>("BEGIN", key_word_idx++));
-	key_tab.insert(pair<string, uint>("END", key_word_idx++));
-	key_tab.insert(pair<string, uint>("PROCEDURE", key_word_idx++));
+	key_tab.insert(pair<string, uint>("PROGRAM", idx_program));
+	key_tab.insert(pair<string, uint>("BEGIN", idx_begin));
+	key_tab.insert(pair<string, uint>("END", idx_end));
+	key_tab.insert(pair<string, uint>("PROCEDURE", idx_procedure));
+	key_tab.insert(pair<string, uint>("CONST", idx_const));
 }
 
 
@@ -69,12 +76,19 @@ void fill_Attributes() {
 	for (int i = 48; i < 58; i++)
 		Attributes.insert(pair<char, uint>((char)i, digit));
 
-	//insert separators ':',  ';'
+	//insert separators ':',  
+
 	for (int i = 58; i < 60; i++)
 		Attributes.insert(pair<char, uint>((char)i, separator));
 
+	//insert invalid one
+	Attributes.insert(pair<char, uint>((char)60, invalid_char));
+	
+	//insert '=' //code 61
+	Attributes.insert(pair<char, uint>((char)61, separator));
+
 	//insert invalid ascii characters
-	for (int i = 60; i < 65; i++)
+	for (int i = 62; i < 65; i++)
 		Attributes.insert(pair<char, uint>((char)i, invalid_char));
 
 	//insert ids => letters
@@ -119,19 +133,24 @@ int search_key_tab(const string &tmp_token) {
 		return -1;
 }
 
-const string& search_tab(const map<string, uint> table, const uint lex_code) {
+const string search_tab(const map<string, uint> table, const uint lex_code) {
 	for (auto it = table.begin(); it != table.end(); it++)
 		if (it->second == lex_code)
 			return it->first;
 	throw exception("The string was not found in table");
 }
 
-const string& search_tabs(const uint lex_code) {
+const string search_tabs(const uint lex_code) {
 	try {
 		return search_tab(idn_tab, lex_code);
 	}
 	catch (exception &) {
-		return search_tab(key_tab, lex_code);
+		try {
+			return search_tab(key_tab, lex_code);
+		}
+		catch (exception &) {
+			return string(1, lex_code);
+		}
 	}
 }
 
