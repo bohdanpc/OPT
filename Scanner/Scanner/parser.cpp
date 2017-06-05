@@ -3,30 +3,6 @@
 static map<uint, string> NonTerminals;
 static map<uint, uint> ErrorLog;
 
-enum nonterminalCode{
-	id_none = 0,
-	id_empty,
-	id_signal_program,
-	id_program,
-	id_procedure_identifier,
-	id_identifier,
-	id_block,
-	id_declarations,
-	id_statement_lst,
-	id_procedure_declarations,
-	id_procedure,
-	id_params_lst,
-	id_declarations_lst,
-	id_declaration,
-	id_variable_identifier,
-	id_identifiers_lst,
-	id_attributes_lst,
-	id_attribute,
-	id_const_declarations,
-	id_const,
-	id_const_lst
-};
-
 enum errorCode{
 	err_tPROGRAM = 1,
 	err_tBEGIN,
@@ -34,8 +10,7 @@ enum errorCode{
 	err_dmSEMICOLON,
 	err_dmCOLON,
 	err_dmRIGHT_BRACKET,
-	err_NO_MORE_TOKENS,
-	err_dmEQUAL
+	err_NO_MORE_TOKENS
 };
 
 const char* getErrorMsg(uint code) {
@@ -54,8 +29,6 @@ const char* getErrorMsg(uint code) {
 		return "')' expected...\n";
 	case err_NO_MORE_TOKENS:
 		return "No more tokens left to parse...\n";
-	case err_dmEQUAL:
-		return "'=' expected...\n";
 	default:
 		return "UNKNOWN error";
 	}
@@ -103,12 +76,7 @@ void initNonTerminals() {
 	NonTerminals.insert(pair<uint, string>(id_variable_identifier, "<variable_identifier>"));
 	NonTerminals.insert(pair<uint, string>(id_identifiers_lst, "<identifiers_lst>"));
 	NonTerminals.insert(pair<uint, string>(id_attributes_lst, "<attributes_lst>"));
-	NonTerminals.insert(pair<uint, string>(id_attribute, "<attribute>"));
-
-	NonTerminals.insert(pair<uint, string>(id_const_declarations, "<const_declarations>"));
-	NonTerminals.insert(pair<uint, string>(id_const, "<const>"));
-	NonTerminals.insert(pair<uint, string>(id_const_lst, "<const_lst>"));
-	
+	NonTerminals.insert(pair<uint, string>(id_attribute, "<attribute>"));	
 }
 
 
@@ -283,48 +251,10 @@ void nt_PROC_DECLARATIONS(Node *&Tree, lex_string &curr_token) {
 	push_to_Tree(nt_proc_declarations, curr_token, id_empty);
 }
 
-bool nt_CONST(Node *&Tree, lex_string &curr_token) {
-	if (curr_token.lex_code != idx_const)
-		return false;
-
-	Node *node_ntCONST = push_to_Tree(Tree, curr_token, id_const);
-	push_to_Tree(node_ntCONST, curr_token, id_none);
-	curr_token = get_next_token();
-	nt_VARIABLE_ID(node_ntCONST, curr_token);
-
-	if (curr_token.lex_code != (uint)'=')
-		ErrorLog.insert(pair<uint, uint>(err_dmEQUAL, curr_token.line_num));
-	else {
-		push_to_Tree(node_ntCONST, curr_token, id_none);
-		curr_token = get_next_token();
-		nt_VARIABLE_ID(node_ntCONST, curr_token);
-		if (curr_token.lex_code != (uint)';')
-			ErrorLog.insert(pair<uint, uint>(err_dmSEMICOLON, curr_token.line_num));
-		else {
-			push_to_Tree(node_ntCONST, curr_token, id_none);
-			curr_token = get_next_token();
-		}
-	}
-	return true;
-
-}
-
-void nt_CONST_LIST(Node *&Tree, lex_string &curr_token) {
-	Node *node_ntCONST_LST = push_to_Tree(Tree, curr_token, id_const_lst);
-	while (nt_CONST(node_ntCONST_LST, curr_token));
-
-	push_to_Tree(node_ntCONST_LST, curr_token, id_empty);
-}
-
-void nt_CONST_DECLARATIONS(Node *&Tree, lex_string &curr_token) {
-	Node *nt_const_declarations = push_to_Tree(Tree, curr_token, id_const_declarations);
-	nt_CONST_LIST(nt_const_declarations, curr_token);
-}
 
 void nt_DECLARATIONS(Node *&Tree, lex_string &curr_token) {
 	Node *nt_declarations = push_to_Tree(Tree, curr_token, id_declarations);
 	nt_PROC_DECLARATIONS(nt_declarations, curr_token);
-	nt_CONST_DECLARATIONS(nt_declarations, curr_token);
 }
 
 
@@ -389,7 +319,7 @@ void nt_SIG_PROGRAM(Node *&Tree, lex_string &curr_token) {
 }
 
 
-void parser() {
+void parser(Node *&Tree) {
 	try {
 		const char *tokens_txt = "Tokens.txt";
 		const char *tables_txt = "Tables.txt";
@@ -403,17 +333,19 @@ void parser() {
 		ofstream err_trace_scanner(err_txt_scanner);
 		ofstream err_trace_parser(err_txt_parser);
 
+#ifdef __DEBUG__
+		ifstream fin("Input_code8.sig");
+#else
 		string input_code;
 		cout << "Enter file_name:";
 		cin >> input_code;
 		ifstream fin(input_code);
-
+#endif
 		scanner(fin, err_trace_scanner);
 		print_tokens_string(out_tokens);
 		print_key_tab(out_tables);
 		print_idn_tab(out_tables);
 
-		Node *Tree = NULL;
 		lex_string curr_token;
 		initNonTerminals();
 		try {
@@ -423,7 +355,6 @@ void parser() {
 			ErrorLog.insert(pair<uint, uint>(err_NO_MORE_TOKENS, curr_token.line_num));
 		}
 		print_Tree(Tree, out_tree);
-		free_Tree(Tree);
 
 		cout << "The tree is formed in '" << tree_txt << "'\n";
 		if (errorsProcessing(err_trace_parser))

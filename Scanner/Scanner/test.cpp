@@ -1,8 +1,8 @@
-#include "parser.h"
+#include "codeGenerator.h"
 
 int main() {
 	try {
-		parser();
+		code_generator();
 	}
 	catch (exception &excp) {
 		cerr << excp.what();

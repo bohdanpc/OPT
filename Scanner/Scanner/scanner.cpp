@@ -9,7 +9,7 @@
 using namespace std;
 
 static uint key_word_idx = KEYWORD_IDX_START;
-static uint identifier_idx = IDENTIFIER_IDX_START;
+static uint identifier_idx = IDX_FIRST_USER_DEFINED;
 
 vector<lex_string> Tokens;
 map<char, uint> Attributes;

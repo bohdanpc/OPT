@@ -29,7 +29,8 @@ enum idn_idx {
 	idx_integer,
 	idx_float,
 	idx_blockfloat,
-	idx_ext
+	idx_ext,
+	IDX_FIRST_USER_DEFINED
 };
 
 typedef enum {
