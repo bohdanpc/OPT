@@ -59,7 +59,7 @@ extern map<char, uint> Attributes;
 extern map<string, uint> idn_tab;
 extern map<string, uint> key_tab;
 
-void scanner(std::istream &fin, std::ostream &ferr);
+void scanner(std::istream &fin, std::ostream &fout);
 void print_tokens_string(std::ostream &out);
 void print_key_tab(std::ostream &out);
 void print_idn_tab(std::ostream &out);

@@ -333,8 +333,8 @@ void parser(Node *&Tree) {
 		ofstream err_trace_scanner(err_txt_scanner);
 		ofstream err_trace_parser(err_txt_parser);
 
-#ifdef __DEBUG__
-		ifstream fin("Input_code8.sig");
+#ifdef _DEBUG
+		ifstream fin("Input_code.sig");
 #else
 		string input_code;
 		cout << "Enter file_name:";
@@ -351,19 +351,21 @@ void parser(Node *&Tree) {
 		try {
 			nt_SIG_PROGRAM(Tree, curr_token);
 		}
-		catch (out_of_range &) {
+		catch (out_of_range &excp) {
 			ErrorLog.insert(pair<uint, uint>(err_NO_MORE_TOKENS, curr_token.line_num));
+			throw excp;
 		}
 		print_Tree(Tree, out_tree);
 
 		cout << "The tree is formed in '" << tree_txt << "'\n";
-		if (errorsProcessing(err_trace_parser))
-			cout << "Some errors occured...\n";
+		if (errorsProcessing(err_trace_parser)) {
+			throw exception("\nParser is finished with errors.\nRead Error log...\n");
+		}
 		else
 			cout << "No errors occured...\n";
 	}
 	catch (exception &excp) {
-		cerr << excp.what();
+		throw excp;
 	}
 }
 

@@ -170,7 +170,7 @@ void add_to_idn_tab(const string &idn, const uint code) {
 	idn_tab.insert(pair<string, uint>(idn, code));
 }
 
-void scanFile(istream &fin, ostream &ferr) {
+void scanFile(istream &fin, ostream &fout) {
 	uint line_count = 1, row_count = 1, row_token_num = 1;
 	t_symbol curr_symbol;
 	string tmp_token;
@@ -259,7 +259,7 @@ void scanFile(istream &fin, ostream &ferr) {
 
 		case invalid_char:
 		default:
-			ferr << "Invalid char: line " << line_count << ", row: " << row_count << "\n";
+			fout << "Invalid char: line " << line_count << ", row: " << row_count << "\n";
 			get_next_symbol(fin, curr_symbol);
 			row_count++;
 		} //switch
@@ -308,9 +308,9 @@ void print_idn_tab(ostream &out) {
 }
 
 
-void scanner(istream &fin, ostream &ferr) {
+void scanner(istream &fin, ostream &fout) {
 	idn_tab_init();
 	key_tab_init();
 	fill_Attributes();
-	scanFile(fin, ferr);
+	scanFile(fin, fout);
 }

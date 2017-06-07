@@ -1,19 +1,12 @@
 #include "parser.h"
-#include <stack>
-
-enum errorCode {
-	err_duplicated_idn = 1,
-	err_unknown,
-
-};
+#include <deque>
 
 uint program_name;
-vector<string> ErrorLog;
-vector<uint> gIDNs;
+static vector<string> ErrorLog;
+static vector<uint> gIDNs;
 ofstream fout;
-ofstream ferr;
 
-#define ntPROCEDURE_NAME_IDX			 1
+#define ntPROCEDURE_NAME_IDX		 1
 #define ntPROGRAM_NAME_IDX			 1
 #define tBEGIN_IDX					 1
 #define tEND_IDX					 3
@@ -56,10 +49,11 @@ void gen_idn(Node *&Tree, uint &args_count, deque<uint> &args) {
 	args_count++;
 
 	if (std::find(args.begin(), args.end(), Tree->children[ntIDN_IDX]->children[tIDENTIFIER_IDX]->Token.lex_code) != args.end()) {
-		ferr << "Line " << Tree->children[ntIDN_IDX]->children[tIDENTIFIER_IDX]->Token.line_num << ": ";
-		ferr << search_tabs(Tree->children[ntIDN_IDX]->children[tIDENTIFIER_IDX]->Token.lex_code) << " is already defined...\n";
+		fout << "!!!Line " << Tree->children[ntIDN_IDX]->children[tIDENTIFIER_IDX]->Token.line_num << ": ";
+		fout << search_tabs(Tree->children[ntIDN_IDX]->children[tIDENTIFIER_IDX]->Token.lex_code) << " is already defined...\n";
 	}
-	args.push_back(Tree->children[ntIDN_IDX]->children[tIDENTIFIER_IDX]->Token.lex_code);
+	else
+		args.push_back(Tree->children[ntIDN_IDX]->children[tIDENTIFIER_IDX]->Token.lex_code);
 }
 
 void gen_idn_list(Node *&Tree, uint &args_count, deque<uint> &args) {
@@ -86,7 +80,7 @@ void gen_attrib(Node *&Tree, uint &type_count, deque<uint> &types) {
 			if (search_tabs(Tree->children[tATTRIBUTE_IDX]->Token.lex_code) == "BLOCKFLOAT")
 				types.push_back(16);
 			else
-				ferr << "Line " << Tree->children[tATTRIBUTE_IDX]->Token.line_num << ": unknown type '"
+				fout << "!!!Line " << Tree->children[tATTRIBUTE_IDX]->Token.line_num << ": unknown type '"
 				<< search_tabs(Tree->children[tATTRIBUTE_IDX]->Token.lex_code) << "' " << endl;
 
 }
@@ -112,7 +106,7 @@ void gen_declaration(Node *&Tree) {
 	gen_attrib_list(Tree->children[ntATTRIBUTE_LST_IDX], types_count, types);
 
 	if (args_count != types_count)
-		ferr << "Line " << Tree->children[ntVARIABLE_IDN_IDX]->children[ntIDN_IDX]->children[tIDENTIFIER_IDX]->Token.line_num
+		fout << "!!!Line " << Tree->children[ntVARIABLE_IDN_IDX]->children[ntIDN_IDX]->children[tIDENTIFIER_IDX]->Token.line_num
 		<< ": " << "count of args and theirs corresponding types differ\n";
 	else
 	{
@@ -154,12 +148,14 @@ void gen_procedure(Node *&Tree) {
 
 	uint procedure_name = Tree->children[ntPROCEDURE_NAME_IDX]->children[ntIDN_IDX]->children[tIDENTIFIER_IDX]->Token.lex_code;
 	if (search_glob_idn_tab(procedure_name)) {
-		ferr << "Line " << Tree->children[ntPROCEDURE_NAME_IDX]->children[ntIDN_IDX]->children[tIDENTIFIER_IDX]->Token.line_num << ": ";
-		ferr << search_tabs(procedure_name) << " is already defined\n";
+		fout << "!!!Line " << Tree->children[ntPROCEDURE_NAME_IDX]->children[ntIDN_IDX]->children[tIDENTIFIER_IDX]->Token.line_num << ": '"
+			 << search_tabs(procedure_name) << "'name is already defined\n";
 	}
-	fout << "@" << search_tabs(procedure_name) << ":" << endl;
-	
-	gen_parameters_lst(Tree->children[ntPARAMETERS_LST_IDX]);
+	else {
+		gIDNs.push_back(procedure_name);
+		fout << "\n@" << search_tabs(procedure_name) << ":" << endl;
+		gen_parameters_lst(Tree->children[ntPARAMETERS_LST_IDX]);
+	}
 }
 
 
@@ -195,12 +191,14 @@ void gen_program(Node *&Tree) {
 	if (Tree->nonTerminalCode == id_program) {
 		program_name = Tree->children[ntPROGRAM_NAME_IDX]->children[ntIDN_IDX]->children[tIDENTIFIER_IDX]->Token.lex_code;
 		if (search_glob_idn_tab(program_name)) {
-			ferr << "Line " << Tree->children[ntPROGRAM_NAME_IDX]->children[ntIDN_IDX]->children[tIDENTIFIER_IDX]->Token.line_num << ": ";
-			ferr << search_tabs(program_name) << " is already defined\n";
+			fout << "!!!Line " << Tree->children[ntPROGRAM_NAME_IDX]->children[ntIDN_IDX]->children[tIDENTIFIER_IDX]->Token.line_num << ": ";
+			fout << search_tabs(program_name) << " is already defined\n";
 		}
+		else
+			gIDNs.push_back(program_name);
 	}
 	else
-		ferr << "Unknown error occured\n";
+		fout << "Unknown error occured\n";
 	gen_block(Tree->children[ntBLOCK_IDX]);
 }
 
@@ -209,23 +207,24 @@ void gen_sig_prog(Node *&Tree) {
 	if (Tree->nonTerminalCode == id_signal_program)
 		gen_program(Tree->children[ntPROGRAM_IDX]);
 	else
-		ferr << "Unknown error occured\n";
+		fout << "Unknown error occured\n";
 }
 
 void code_generator() {
 	Node *Tree = NULL;
 
-	string ferrName = "Code_gen_error_log.txt";
 	string foutName = "Generated_code.txt";
 
-	ferr.open(ferrName);
 	fout.open(foutName);
+	try {
+		parser(Tree);
+		gen_sig_prog(Tree);
 
-	parser(Tree);
-	gen_sig_prog(Tree);
-
-	cout << "\nCode generator is finished\n";
-	cout << "Error log: '" << ferrName << "'" << endl;
-	cout << "Generated code: '" << foutName << "'" << endl;
-	free_Tree(Tree);
+		cout << "\nCode generator is finished\n";
+		cout << "Generated code: '" << foutName << "'" << endl;
+		free_Tree(Tree);
+	}
+	catch (exception &excp) {
+		cout << excp.what() << endl;
+	}
 }
